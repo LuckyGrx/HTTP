@@ -1,0 +1,8 @@
+#
+*.zip
+*.mkv
+*.o
+*.out
+*.txt*
+
+.vscode
