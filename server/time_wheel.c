@@ -17,7 +17,7 @@ int time_wheel_destroy() {
 	pthread_spin_destroy(&(tw.spin_lock));
 }
 
-int time_wheel_add_timer(ftp_connection_t* connection, timer_handler_pt handler, int timeout) {
+int time_wheel_add_timer(http_request_t* request, timer_handler_pt handler, int timeout) {
     pthread_spin_lock(&(tw.spin_lock));
 
     int ticks = 0;        // 转动几个槽触发
@@ -37,11 +37,11 @@ int time_wheel_add_timer(ftp_connection_t* connection, timer_handler_pt handler,
     timer->rotation = rotation;
     timer->slot = slot;
     timer->handler = handler;
-    timer->connection = connection;
+    timer->request = request;
     timer->next = NULL;
     timer->prev = NULL;
 
-    connection->timer = timer; // 之后好进行删除操作
+    request->timer = timer; // 之后好进行删除操作
 
     if (tw.slots[slot] == NULL) {
         tw.slots[slot] = timer;
@@ -55,12 +55,12 @@ int time_wheel_add_timer(ftp_connection_t* connection, timer_handler_pt handler,
     return 0;
 }
 
-int time_wheel_del_timer(ftp_connection_t* connection) {
-    if (connection == NULL)
+int time_wheel_del_timer(http_request_t* request) {
+    if (request == NULL)
         return -1;
     pthread_spin_lock(&(tw.spin_lock));
 
-    tw_timer_t* timer = (tw_timer_t*)connection->timer;
+    tw_timer_t* timer = (tw_timer_t*)request->timer;
 
     if (timer != NULL) {	
         if (timer == tw.slots[timer->slot]) {	
@@ -73,7 +73,7 @@ int time_wheel_del_timer(ftp_connection_t* connection) {
                 timer->next->prev = timer->prev;	
         }	
         free(timer);	
-        connection->timer = NULL; // 修复timer->slot的值会大于9的情况(32515)
+        request->timer = NULL; // 修复timer->slot的值会大于9的情况(32515)
     }
 
     pthread_spin_unlock(&(tw.spin_lock));
@@ -96,7 +96,7 @@ int time_wheel_tick() {
             tmp = tmp->next;
         } else { // 否则，说明定时器已经到期，于是执行定时任务，然后删除该定时器
             //(DEFAULT_CONNECTION_TIMEOUT / time_wheel.slot_interval) * EPOLL_TIMEOUT = 大约50 s
-            tmp->handler(tmp->connection); //  执行定时任务
+            tmp->handler(tmp->request); //  执行定时任务
 
             if (tmp == tw.slots[tw.cur_slot]) {
                 tw.slots[tw.cur_slot] = tmp->next;

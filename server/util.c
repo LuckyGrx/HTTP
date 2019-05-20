@@ -1,7 +1,7 @@
 
 #include "util.h"
 #include "epoll.h"
-#include "ftp_connection.h"
+#include "http_request.h"
 #include "time_wheel.h"
 
 int tcp_socket_bind_listen(int port) {
@@ -52,12 +52,12 @@ void tcp_accept(int epollfd, int listenfd) {
 
 		int rc = make_socket_non_blocking(connfd);
 
-		ftp_connection_t* connection = (ftp_connection_t*)calloc(1, sizeof(ftp_connection_t));
-		init_connection_t(connection, connfd, epollfd);
+		http_request_t* request = (http_request_t*)calloc(1, sizeof(http_request_t));
+		init_http_request_t(request, connfd, epollfd);
 
-		time_wheel_add_timer(connection, ftp_connection_shutdown, tw.slot_interval * 20);
+		//time_wheel_add_timer(connection, ftp_connection_shutdown, tw.slot_interval * 20);
 		// 文件描述符可以读，边缘触发(Edge Triggered)模式，保证一个socket连接在任一时刻只被一个线程处理
-		ftp_epoll_add(epollfd, connfd, connection, EPOLLIN | EPOLLET | EPOLLONESHOT); 
+		ftp_epoll_add(epollfd, connfd, request, EPOLLIN | EPOLLET | EPOLLONESHOT); 
 
 	}
 	if (-1 == connfd) {
@@ -140,7 +140,7 @@ int read_conf(const char* filename, ftp_conf_t* conf) {
 	fclose(fp);
 	return FTP_CONF_OK;
 }
-
+/*
 int get_file_size(int filefd) {
 	struct stat statbuf;
 	fstat(filefd, &statbuf);
@@ -188,6 +188,7 @@ int sendfile_by_mmap(int sockfd, int filefd) {
 	// 发送文件结束标志
 	sendn(sockfd, (char*)&pkg_head, sizeof(pkg_head));
 }
+*/
 
 
 int ftp_daemon() {

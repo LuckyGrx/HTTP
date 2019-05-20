@@ -38,18 +38,18 @@ static const char* szret[] = {"I get a correct result\n", "Something wrong\n"};
 // 从状态机,用于解析出一行内容
 // read_index          // 当前已经读取了多少字节的客户数据
 // checked_index       // 当前已经分析完了多少字节的客户数据
-enum LINE_STATUS parse_line(char* buffer, int* checked_index, int* read_index) {
+enum LINE_STATUS parse_line(char* buffer, int* checked_index, int read_index) {
     char temp;
 
     // checked_index指向buffer(应用程序的读缓冲区)中正在分析的字节
     // read_index 指向buffer中客户数据的尾部的下一个字节
     // buffer中第0 - checked_index字节都已分析完毕
     // 第checked_index - (read_index - 1)字节由下面的循环挨个分析
-    for (; *checked_index < *read_index; (*checked_index)++) {
+    for (; *checked_index < read_index; (*checked_index)++) {
         // 获取当前要分析的字节
         temp = buffer[*checked_index];
         if (temp == '\r') {
-            if ((*checked_index + 1) == *read_index) {
+            if ((*checked_index + 1) == read_index) {
                 return LINE_OPEN;
             } else if (buffer[*checked_index + 1] == '\n') {
                 // 将buffer中的\r\n字符设置为空字符
@@ -106,7 +106,6 @@ enum HTTP_CODE parse_requestline(char* temp, enum CHECK_STATE* checkstate) {
     if (!version) {
         return BAD_REQUEST;
     }
-    printf("aaa\n");
 
     *version++ = '\0';
     version += strspn(version, " \t");
@@ -150,8 +149,8 @@ enum HTTP_CODE parse_headers(char* temp) {
 
 
 // 分析HTTP请求的入口函数
-enum HTTP_CODE parse_content(char* buffer, int* checked_index, enum CHECK_STATE* checkstate, int* read_index, int* start_line) {
-    enum LINE_STATUS linestatus = LINE_OK;    // 记录当前行的读取状态
+enum HTTP_CODE parse_content(char* buffer, int* checked_index, enum CHECK_STATE* checkstate, int read_index, int* start_line) {
+    enum LINE_STATUS linestatus;              // = LINE_OK;    // 记录当前行的读取状态
     enum HTTP_CODE retcode = NO_REQUEST;      // 记录HTTP请求的处理结果
 
     // 主状态机,用于从buffer中取出所有完整的行
@@ -162,15 +161,11 @@ enum HTTP_CODE parse_content(char* buffer, int* checked_index, enum CHECK_STATE*
         switch (*checkstate) {
             case CHECK_STATE_REQUESTLINE:    // 第一个状态,分析请求行
                 retcode = parse_requestline(temp, checkstate);
-                if (retcode == BAD_REQUEST)
-                    return BAD_REQUEST;
+                return retcode;
                 break;
             case CHECK_STATE_HEADER:         // 第二个状态,分析请求头
                 retcode = parse_headers(temp);
-                if (retcode == BAD_REQUEST)
-                    return BAD_REQUEST;
-                else if (retcode == GET_REQUEST)
-                    return GET_REQUEST;
+                return retcode;
                 break;
             default:
                 return INTERNAL_ERROR;
@@ -234,7 +229,7 @@ int main(int argc, char** argv) {
             }
             read_index += data_read;
             // 分析目前已经获得的所有客户数据
-            enum HTTP_CODE result = parse_content(buffer, &checked_index, &checkstate, &read_index, &start_line);
+            enum HTTP_CODE result = parse_content(buffer, &checked_index, &checkstate, read_index, &start_line);
 
             if (result == NO_REQUEST)                         // 尚未得到一个完整的HTTP请求
                 continue;

@@ -1,6 +1,6 @@
 CC = gcc -std=gnu99
 
-server:server.o util.o epoll.o ftp_connection.o threadpool.o rio.o time_wheel.o
+server:server.o util.o epoll.o http_request.o http_parse.o threadpool.o rio.o time_wheel.o
 	$(CC) -w -g -o server *.o -lpthread
 
 server.o:server.c
@@ -12,8 +12,11 @@ epoll.o:epoll.c
 util.o:util.c
 	$(CC) -w -g -c util.c
 
-ftp_connection.o:ftp_connection.c
-	$(CC) -w -g -c ftp_connection.c
+http_parse.o:http_parse.c
+	$(CC) -w -g -c http_parse.c
+
+http_request.o:http_request.c
+	$(CC) -w -g -c http_request.c
 
 rio.o:rio.c
 	$(CC) -w -g -c rio.c
