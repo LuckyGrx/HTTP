@@ -3,6 +3,7 @@
 
 #include "head.h"
 #include "http_request.h"
+#include "http_response.h"
 
 #define HTTP_GET       1
 #define HTTP_POST      2
@@ -35,12 +36,6 @@ enum request_message_parse_state {
 	request_header_in_CR,
 	request_header_in_CRLF,
 	request_header_in_CRLFCR
-};
-
-
-enum response_status {
-	response_bad_request,
-	response_not_implemented,
 };
 
 

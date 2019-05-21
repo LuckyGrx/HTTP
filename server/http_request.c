@@ -13,29 +13,6 @@ void init_http_request_t(http_request_t* request, int fd, int epollfd) {
 	request->timer = NULL;
 }
 
-void test(http_request_t* request) {
-	// 响应报文的响应首部(响应行 + 响应头)
-	char response_header[BUFFER_SIZE];
-	// 响应报文的响应体
-	char response_body[BUFFER_SIZE];
-
-
-	sprintf(header, "HTTP/1.1 %d %s"CRLF, request->status, "hhh");
-	sprintf(header, "%sContent-type: text/html"CRLF, header);
-	sprintf(header, "%sContent-length: %d"CRLF, header, strlen(response_body));
-
-	rio_writen(request->fd, response_header, strlen(response_heaser));
-	rio_writen(request->fd, response_body, strlen(response_body));
-}
-
-void response_controller(http_request_t* request) {
-	switch (request->status) {
-		case response_bad_request:
-		case response_not_implemented:
-			test(request);
-			break;
-	}
-}
 
 void request_controller(void* ptr) {
 	http_request_t* request = (http_request_t*)ptr;

@@ -20,7 +20,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_method;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -44,7 +44,7 @@ void http_parse_request_line(http_request_t* request) {
 									break;
 								}
 							default:
-								request->status = response_not_implemented;
+								request->status_code = response_not_implemented;
 								return ;
 						}
 						request->state = request_line_in_space_before_uri;
@@ -60,7 +60,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_uri;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -70,7 +70,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_space_before_version;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -79,7 +79,7 @@ void http_parse_request_line(http_request_t* request) {
 					case 'H':
 						request->state = request_line_in_version_H;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 
 				}
@@ -90,7 +90,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HT;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -100,7 +100,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HTT;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -110,7 +110,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HTTP;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -120,7 +120,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_slot;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -130,7 +130,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_first_digit;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -140,7 +140,7 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_dot;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -152,32 +152,32 @@ void http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_second_digit;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
 			case request_line_in_version_second_digit:
 				switch (ch) {
-					case '\r':
+					case CR:
 						request->state = request_line_in_CR;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
 			case request_line_in_CR:
 				switch (ch) {
-					case '\n':
+					case LF:
 						request->state = request_header_start;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
 			default:
-				request->status = response_bad_request;
+				request->status_code = response_bad_request;
 				return ;
 		}
 	}
@@ -216,7 +216,7 @@ void http_parse_request_header(http_request_t* request) {
 						request->state = request_header_in_space_before_value;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -236,7 +236,7 @@ void http_parse_request_header(http_request_t* request) {
 						request->state = request_header_in_CRLF;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
@@ -256,7 +256,7 @@ void http_parse_request_header(http_request_t* request) {
 						request->state = request_line_start;
 						break;
 					default:
-						request->status = response_bad_request;
+						request->status_code = response_bad_request;
 						return ;
 				}
 				break;
