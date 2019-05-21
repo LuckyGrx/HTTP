@@ -28,6 +28,8 @@ typedef struct http_request {
 	void*             uri_begin;
 	void*             uri_end;
 
+	int               status;
+
 	void*             timer;
 }http_request_t;
 

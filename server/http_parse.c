@@ -1,7 +1,7 @@
 #include "http_parse.h"
 
 // 解析请求报文的请求行
-int http_parse_request_line(http_request_t* request) {
+void http_parse_request_line(http_request_t* request) {
 	char ch, *p, *m;
 	size_t pi;
 	for (pi = request->begin; pi < request->end; ++pi) {
@@ -20,8 +20,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_method;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_method:
@@ -44,8 +44,8 @@ int http_parse_request_line(http_request_t* request) {
 									break;
 								}
 							default:
-								request->method = HTTP_UNKNOW;
-								break;
+								request->status = response_not_implemented;
+								return ;
 						}
 						request->state = request_line_in_space_before_uri;
 						break;
@@ -60,8 +60,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_uri;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_uri:
@@ -70,8 +70,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_space_before_version;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_space_before_version:
@@ -79,8 +79,8 @@ int http_parse_request_line(http_request_t* request) {
 					case 'H':
 						request->state = request_line_in_version_H;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 
 				}
 				break;
@@ -90,8 +90,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HT;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_version_HT:
@@ -100,8 +100,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HTT;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_version_HTT:
@@ -110,8 +110,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HTTP;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_version_HTTP:
@@ -120,8 +120,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_slot;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_version_slot:
@@ -130,8 +130,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_first_digit;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_version_first_digit:
@@ -140,8 +140,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_dot;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			// 支持 HTTP1.0 和 HTTP1.1
@@ -152,8 +152,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_second_digit;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_version_second_digit:
@@ -162,8 +162,8 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_CR;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_line_in_CR:
@@ -172,20 +172,20 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_header_start;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			default:
-				printf("version is wrong\n");
-				break;
+				request->status = response_bad_request;
+				return ;
 		}
 	}
-
+	request->begin = request->end;
 }
 
 // 解析请求报文的请求头
-int http_parse_request_header(http_request_t* request) {
+void http_parse_request_header(http_request_t* request) {
 	char ch, *p, *m;
 	size_t pi;
 	for (pi = request->begin; pi < request->end; ++pi) {
@@ -195,15 +195,18 @@ int http_parse_request_header(http_request_t* request) {
 		switch(request->state) {
 			case request_header_start:
 				switch (ch) {
-
+					case CR:
+						request->state = request_header_in_CRLFCR;
+						break;
+					default:
+						request->state = request_header_in_key;
+						break;
 				}
 				break;
 			case request_header_in_key:
 				switch (ch) {
 					case ':':
 						request->state = request_header_in_colon;
-						break;
-					default:
 						break;
 				}
 				break;
@@ -213,15 +216,51 @@ int http_parse_request_header(http_request_t* request) {
 						request->state = request_header_in_space_before_value;
 						break;
 					default:
-						printf("version is wrong\n");
-						break;
+						request->status = response_bad_request;
+						return ;
 				}
 				break;
 			case request_header_in_space_before_value:
+				request->state = request_header_in_value;
 				break;
 			case request_header_in_value:
+				switch (ch) {
+					case CR:
+						request->state = request_header_in_CR;
+						break;
+				}
+				break;
+			case request_header_in_CR:
+				switch (ch) {
+					case LF:
+						request->state = request_header_in_CRLF;
+						break;
+					default:
+						request->status = response_bad_request;
+						return ;
+				}
+				break;
+			case request_header_in_CRLF:
+				switch (ch) {
+					case CR:
+						request->state = request_header_in_CRLFCR;
+						break;
+					default:
+						request->state = request_header_in_key;
+						break;
+				}
+				break;
+			case request_header_in_CRLFCR:
+				switch (ch) {
+					case LF:
+						request->state = request_line_start;
+						break;
+					default:
+						request->status = response_bad_request;
+						return ;
+				}
 				break;
 		}
 	}
-
+	request->begin = request->end;
 }

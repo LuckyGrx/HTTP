@@ -4,7 +4,6 @@
 #include "head.h"
 #include "http_request.h"
 
-#define HTTP_UNKNOW    0
 #define HTTP_GET       1
 #define HTTP_POST      2
 #define HTTP_HEAD      3
@@ -33,12 +32,21 @@ enum request_message_parse_state {
 	request_header_in_colon,
 	request_header_in_space_before_value,
 	request_header_in_value,
-	request_header_in_CR
+	request_header_in_CR,
+	request_header_in_CRLF,
+	request_header_in_CRLFCR
 };
 
-//
-int http_parse_request_line(http_request_t* request);
 
-int http_parse_request_header(http_request_t* request);
+enum response_status {
+	response_bad_request,
+	response_not_implemented,
+};
+
+
+//
+void http_parse_request_line(http_request_t* request);
+
+void http_parse_request_header(http_request_t* request);
 
 #endif
