@@ -1,5 +1,5 @@
-#ifndef __FTP_REQUEST_H__
-#define __FTP_REQUEST_H__
+#ifndef __HTTP_REQUEST_H__
+#define __HTTP_REQUEST_H__
 
 #include "head.h"
 #include "util.h"
@@ -29,6 +29,8 @@ typedef struct http_request {
 	void*             uri_end;
 
 	int               status_code;
+
+	int               version;             // HTTP的版本
 
 	void*             timer;
 }http_request_t;

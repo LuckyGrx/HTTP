@@ -4,6 +4,7 @@
 void response_controller(http_request_t* request) {
 	switch (request->status_code) {
 		case response_bad_request:
+		case response_not_found:
 		case response_not_implemented:
 			send_response_message(request);
 			break;
@@ -14,8 +15,12 @@ const char* get_reason_phrase(int status_code) {
 	switch (status_code) {
 		// 4xx:
 		case response_bad_request:
-			return "Interval Server Error";
+			return "Bad Request";
+		case response_not_found:
+			return "Not Found";
 		// 5xx:
+		case response_internal_server_error:
+			return "Internal Server Error";
 		case response_not_implemented:
 			return "Method Not Implemented";
 		// 2xx:

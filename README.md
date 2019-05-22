@@ -49,6 +49,6 @@
 
         - 线程池操作及其同步互斥管理
 
-        - 使用有限状态机解析HTTP协议(HTTP0.9, HTTP1.0, HTTP1.1)
+        - 使用有限状态机解析HTTP协议(HTTP1.0, HTTP1.1)
 
             - 请求方法: GET, POST, HEAD

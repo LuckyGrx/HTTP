@@ -7,9 +7,11 @@
 #include "http_request.h"
 
 enum response_status {
-	response_bad_request = 400,
+	response_bad_request           = 400,
+	response_not_found             = 404,
 
-	response_not_implemented = 501
+	response_internal_server_error = 500,
+	response_not_implemented       = 501
 };
 
 void response_controller(http_request_t* request);

@@ -5,7 +5,7 @@
 #include "time_wheel.h"
 
 extern struct epoll_event *events;
-#define DEFAULT_CONFIG "ftp.conf"
+#define DEFAULT_CONFIG "http.conf"
 
 int main (int argc, char* argv[]) {
 	// 开启守护进程
@@ -29,11 +29,11 @@ int main (int argc, char* argv[]) {
 	ftp_threadpool_t* pool = threadpool_init(conf.threadnum);
 
 	// 
-	signal(SIGALRM, time_wheel_alarm_handler);
+	//signal(SIGALRM, time_wheel_alarm_handler);
 	// 初始化时间轮
 	time_wheel_init();
 	// 发送定时信号
-	alarm(DEFAULT_TICK_TIME);
+	//alarm(DEFAULT_TICK_TIME);
 	for (;;) {
 
 		// 调用epoll_wait函数，返回接收到事件的数量

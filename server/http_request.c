@@ -13,12 +13,40 @@ void init_http_request_t(http_request_t* request, int fd, int epollfd) {
 	request->timer = NULL;
 }
 
+int file_process(http_request_t* request, const char* filename, struct stat* sbuf) {
+	struct stat sbuf;
+	//处理文件找不到错误
+	if (stat(filename, sbuf)) {
+		request->status_code = response_not_found;
+		return 1;
+	}
+
+	// 待处理
+	return 0;
+}
+
+void static_file_process(http_request_t* request, ) {
+	char header[BUFFER_SIZE];
+	
+	// 返回响应报文的响应行
+	sprintf(header, "HTTP/1.1 %d %s%c%c", out->status, get_reason_phrase(out->status), CR, LF);
+
+	// 返回响应报文的响应头
+	
+	// 空行
+	sprintf(header, "%s%c%c", header);
+}
+
 
 void request_controller(void* ptr) {
 	http_request_t* request = (http_request_t*)ptr;
-
+	char filename[BUFFER_SIZE];
+	char query_string[BUFFER_SIZE];
 	char* plast = NULL;
 	size_t remain_size;
+	struct stat sbuf;
+
+	int rc;
 	// 删除定时器
 	//time_wheel_del_timer(request);
 
@@ -44,13 +72,37 @@ void request_controller(void* ptr) {
 		request->end += reco;
 
 		// 解析请求报文的请求行
-		http_parse_request_line(request);
-
-		// 请求行解析有问题,则发送响应报文
-		response_controller(request);
+		rc = http_parse_request_line(request);
+		if (rc == HTTP_EAGAIN)
+			continue;
+		else if (rc != 0) {
+			// 请求行解析有问题,则发送响应报文
+			response_controller(request);
+			goto close;
+		}
 
 		// 解析请求报文的请求头
-		http_parse_request_header(request);
+		rc = http_parse_request_header(request);
+		if (rc == HTTP_EAGAIN)
+			continue;
+		else if (rc != 0) {
+			// 请求头解析有问题,则发送响应报文
+			response_controller(request);
+			goto close;
+		}
+
+		// 解析URI,获取文件名
+		http_parse_uri(request->uri_begin, request->uri_end, filename, query_string);
+
+		// 处理文件
+		rc = file_process(request, filename, &sbuf);
+		if (rc != 0) {
+			response_controller(request);
+			goto close;
+		}
+
+		// 处理静态文件请求
+		static_file_process(request, filename, sbuf.st_size, out);
 	}
 	// 添加定时器
 	//time_wheel_add_timer(reuqest, ftp_connection_shutdown, tw.slot_interval * 10);

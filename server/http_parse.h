@@ -5,12 +5,18 @@
 #include "http_request.h"
 #include "http_response.h"
 
+#define HTTP_EAGAIN EAGAIN
+#define ROOTPATH    "./root_path"
+
 #define HTTP_GET       1
 #define HTTP_POST      2
 #define HTTP_HEAD      3
 
 #define CR '\r'
 #define LF '\n'
+
+#define HTTP_PARSE_INVALID_REQUEST_LINE   1
+#define HTTP_PARSE_INVALID_REQUEST_HEADER 2
 
 enum request_message_parse_state {
 	request_line_start,
@@ -40,8 +46,10 @@ enum request_message_parse_state {
 
 
 //
-void http_parse_request_line(http_request_t* request);
+int http_parse_request_line(http_request_t* request);
 
-void http_parse_request_header(http_request_t* request);
+int http_parse_request_header(http_request_t* request);
+
+void http_parse_uri(char* uri_start, char* uri_end, char* filename, char* query_string);
 
 #endif
