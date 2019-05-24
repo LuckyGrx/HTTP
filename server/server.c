@@ -28,7 +28,7 @@ int main (int argc, char* argv[]) {
 	// 初始化线程池
 	ftp_threadpool_t* pool = threadpool_init(conf.threadnum);
 
-	// 
+	// 初始化信号处理函数
 	//signal(SIGALRM, time_wheel_alarm_handler);
 	// 初始化时间轮
 	time_wheel_init();

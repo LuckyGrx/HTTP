@@ -35,8 +35,10 @@ typedef struct http_request {
 	void*             timer;
 }http_request_t;
 
-void init_request_t(http_request_t* connection, int fd, int epollfd);
+void init_request_t(http_request_t* request, int fd, int epollfd);
 
 void request_controller(void*);
+
+void http_request_close(http_request_t* request);
 
 #endif

@@ -1,6 +1,7 @@
 #include "http_request.h"
 #include "time_wheel.h"
 #include "http_parse.h"
+#include "http_response.h"
 
 void init_http_request_t(http_request_t* request, int fd, int epollfd) {
 	request->epollfd = epollfd;
@@ -13,31 +14,6 @@ void init_http_request_t(http_request_t* request, int fd, int epollfd) {
 	request->timer = NULL;
 }
 
-int file_process(http_request_t* request, const char* filename, struct stat* sbuf) {
-	struct stat sbuf;
-	//处理文件找不到错误
-	if (stat(filename, sbuf)) {
-		request->status_code = response_not_found;
-		return 1;
-	}
-
-	// 待处理
-	return 0;
-}
-
-void static_file_process(http_request_t* request, ) {
-	char header[BUFFER_SIZE];
-	
-	// 返回响应报文的响应行
-	sprintf(header, "HTTP/1.1 %d %s%c%c", out->status, get_reason_phrase(out->status), CR, LF);
-
-	// 返回响应报文的响应头
-	
-	// 空行
-	sprintf(header, "%s%c%c", header);
-}
-
-
 void request_controller(void* ptr) {
 	http_request_t* request = (http_request_t*)ptr;
 	char filename[BUFFER_SIZE];
@@ -48,7 +24,7 @@ void request_controller(void* ptr) {
 
 	int rc;
 	// 删除定时器
-	//time_wheel_del_timer(request);
+	time_wheel_del_timer(request);
 
 	while (1) {
 		// plast指向缓冲区buffer当前可写入的第一个字节位置
@@ -77,7 +53,7 @@ void request_controller(void* ptr) {
 			continue;
 		else if (rc != 0) {
 			// 请求行解析有问题,则发送响应报文
-			response_controller(request);
+			//response_controller(request);
 			goto close;
 		}
 
@@ -87,25 +63,33 @@ void request_controller(void* ptr) {
 			continue;
 		else if (rc != 0) {
 			// 请求头解析有问题,则发送响应报文
-			response_controller(request);
+			//response_controller(request);
 			goto close;
 		}
+
+		// 初始化响应报文数据结构
+		http_response_t* response = (http_response_t*)calloc(1, sizeof(http_response_t));
+		init_http_response_t(response, request->fd);
 
 		// 解析URI,获取文件名
 		http_parse_uri(request->uri_begin, request->uri_end, filename, query_string);
 
 		// 处理文件
-		rc = file_process(request, filename, &sbuf);
-		if (rc != 0) {
-			response_controller(request);
-			goto close;
-		}
+		//rc = file_process(request, filename, &sbuf);
+		//if (rc != 0) {
+		//	response_controller(request);
+		//	goto close;
+		//}
 
 		// 处理静态文件请求
-		static_file_process(request, filename, sbuf.st_size, out);
+		static_file_process(response, filename, sbuf.st_size);
+
+		// 要是响应报文要求短连接,则发送完报文后,关闭连接
+		if (response->connection == CONNECTION_CLOSE)
+			goto close;
 	}
 	// 添加定时器
-	//time_wheel_add_timer(reuqest, ftp_connection_shutdown, tw.slot_interval * 10);
+	time_wheel_add_timer(request, http_request_close, tw.slot_interval * 10);
 
 	ftp_epoll_mod(request->epollfd, request->fd, request, EPOLLIN | EPOLLET | EPOLLONESHOT); 
 

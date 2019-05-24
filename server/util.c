@@ -55,7 +55,7 @@ void tcp_accept(int epollfd, int listenfd) {
 		http_request_t* request = (http_request_t*)calloc(1, sizeof(http_request_t));
 		init_http_request_t(request, connfd, epollfd);
 
-		//time_wheel_add_timer(connection, ftp_connection_shutdown, tw.slot_interval * 20);
+		time_wheel_add_timer(request, http_request_close, tw.slot_interval * 20);
 		// 文件描述符可以读，边缘触发(Edge Triggered)模式，保证一个socket连接在任一时刻只被一个线程处理
 		ftp_epoll_add(epollfd, connfd, request, EPOLLIN | EPOLLET | EPOLLONESHOT); 
 
