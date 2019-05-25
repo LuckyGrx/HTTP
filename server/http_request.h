@@ -2,14 +2,10 @@
 #define __HTTP_REQUEST_H__
 
 #include "head.h"
-#include "util.h"
-#include "rio.h"
 
 #define BUFFER_SIZE 4096 //读缓冲区大小
 
 typedef struct http_request {
-	int               epollfd;
-	int               fd;
 	char              buffer[BUFFER_SIZE];
 
 	size_t            begin;         
@@ -28,17 +24,10 @@ typedef struct http_request {
 	void*             uri_begin;
 	void*             uri_end;
 
-	int               status_code;
-
 	int               version;             // HTTP的版本
 
-	void*             timer;
 }http_request_t;
 
-void init_request_t(http_request_t* request, int fd, int epollfd);
-
-void request_controller(void*);
-
-void http_request_close(http_request_t* request);
+void init_http_request_t(http_request_t* request);
 
 #endif

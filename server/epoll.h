@@ -2,19 +2,18 @@
 #define __EPOLL_H__
 
 #include "head.h"
-#include "http_request.h"
+#include "http_connection.h"
 #include "threadpool.h"
-#include "time_wheel.h"
 
 #define MAX_EVENT_NUMBER 1024
 
 int ftp_epoll_create();
 
-int ftp_epoll_add(int epollfd, int fd, http_request_t* request, int events);
+int ftp_epoll_add(http_connection_t* connection, int events);
 
-int ftp_epoll_mod(int epollfd, int fd, http_request_t* request, int events);
+int ftp_epoll_mod(http_connection_t* connection, int events);
 
-int ftp_epoll_del(int epollfd, int fd, http_request_t* request, int events);
+int ftp_epoll_del(http_connection_t* connection, int events);
 
 int ftp_epoll_wait(int epollfd, struct epoll_event *events, int max_events, int timeout);
 

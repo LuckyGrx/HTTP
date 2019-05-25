@@ -1,4 +1,5 @@
 #include "http_response.h"
+#include "http_parse.h"
 
 mime_type_t mime[] = {
 	{".html", "text/html"},
@@ -22,20 +23,20 @@ mime_type_t mime[] = {
     {NULL ,"text/plain"}
 };
 
-void init_http_response_t(http_response_t* response, int fd) {
-	response->fd = fd;
+void init_http_response_t(http_response_t* response) {
 	// 默认值为Keep-Alive,保持连接不断开
 	response->connection = CONNECTION_KEEP_ALIVE;
 	// 默认为200,出错时被修改
 	response->status_code = 200;
 }
 
-void response_controller(http_response_t* response) {
+void response_controller(http_response_t* response, int connfd) {
 	switch (response->status_code) {
 		case response_bad_request:
 		case response_not_found:
+		case response_forbidden:
 		case response_not_implemented:
-			send_response_message(response);
+			send_response_message(response, connfd);
 			break;
 	}
 }
@@ -45,6 +46,8 @@ const char* get_reason_phrase(int status_code) {
 		// 4xx:
 		case response_bad_request:
 			return "Bad Request";
+		case response_forbidden:
+			return "Forbidden";
 		case response_not_found:
 			return "Not Found";
 		// 5xx:
@@ -58,7 +61,7 @@ const char* get_reason_phrase(int status_code) {
 	}
 }
 
-void send_response_message(http_response_t* response) {
+void send_response_message(http_response_t* response, int connfd) {
 	// 响应报文的响应首部(响应行 + 响应头)
 	char header[BUFFER_SIZE];
 	// 响应报文的响应体
@@ -72,8 +75,8 @@ void send_response_message(http_response_t* response) {
 	// 填充 空行
 	sprintf(header, "%s%c%c", header, CR, LF);
 
-	rio_writen(response->fd, header, strlen(header));
-	rio_writen(response->fd, body, strlen(body));
+	rio_writen(connfd, header, strlen(header));
+	rio_writen(connfd, body, strlen(body));
 }
 
 static const char* get_file_type(const char* type) {
@@ -86,7 +89,7 @@ static const char* get_file_type(const char* type) {
 	return "text/plain";
 }
 
-void static_file_process(http_response_t* response, const char* filename, size_t filesize) {
+void static_file_process(http_response_t* response, int connfd, const char* filename, size_t filesize) {
 	char header[BUFFER_SIZE];
 	
 	// 返回响应报文的响应行
@@ -105,15 +108,15 @@ void static_file_process(http_response_t* response, const char* filename, size_t
 	const char* filetype = get_file_type(strrchr(filename, '.'));
 	sprintf(header, "%sContent-type: %s%c%c", header, filetype, CR, LF);
 	// 通过Content-length返回文件大小
-	sprintf(header, "%sContent-length: %uz%c%c", header, filesize, CR, LF);
+	sprintf(header, "%sContent-length: %u%c%c", header, filesize, CR, LF);
 
-	sprintf(header, "%sServer: HTTP%c%c", header, CR, LF);
+	sprintf(header, "%sServer: server%c%c", header, CR, LF);
 	
 	// 空行
-	sprintf(header, "%s%c%c", header);
+	sprintf(header, "%s%c%c", header, CR, LF);
 
 	// 发送响应报文的响应头(响应行 + 响应头部)
-	size_t send_len = (size_t)rio_writen(response->fd, header, strlen(header));
+	size_t send_len = (size_t)rio_writen(connfd, header, strlen(header));
 
 
 	// 打开并发送文件
@@ -122,6 +125,21 @@ void static_file_process(http_response_t* response, const char* filename, size_t
 	close(src_fd);
 
 	// 发送文件
-	send_len = (size_t)rio_writen(response->fd, src_addr, filesize);
+	send_len = (size_t)rio_writen(connfd, src_addr, filesize);
 	munmap(src_addr, filesize);
+}
+
+
+int file_process(http_response_t* response, const char* filename, struct stat* sbuf) {
+	// 处理文件找不到错误
+	if (stat(filename, sbuf) < 0) {
+		response->status_code = response_not_found;
+		return 1;
+	}
+	// 处理权限错误
+	if (!(S_ISREG((*sbuf).st_mode)) || !(S_IRUSR & (*sbuf).st_mode)) {
+		response->status_code = response_forbidden;
+		return 1;
+	}
+	return 0;
 }

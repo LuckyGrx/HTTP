@@ -52,13 +52,12 @@ void tcp_accept(int epollfd, int listenfd) {
 
 		int rc = make_socket_non_blocking(connfd);
 
-		http_request_t* request = (http_request_t*)calloc(1, sizeof(http_request_t));
-		init_http_request_t(request, connfd, epollfd);
+		http_connection_t* connection = (http_connection_t*)calloc(1, sizeof(http_connection_t));
+		init_http_connection_t(connection, connfd, epollfd);
 
-		time_wheel_add_timer(request, http_request_close, tw.slot_interval * 20);
+		time_wheel_add_timer(connection, http_connection_close, tw.slot_interval * 20);
 		// 文件描述符可以读，边缘触发(Edge Triggered)模式，保证一个socket连接在任一时刻只被一个线程处理
-		ftp_epoll_add(epollfd, connfd, request, EPOLLIN | EPOLLET | EPOLLONESHOT); 
-
+		ftp_epoll_add(connection, EPOLLIN | EPOLLET | EPOLLONESHOT); 
 	}
 	if (-1 == connfd) {
 		if (errno != EAGAIN) {
@@ -140,56 +139,6 @@ int read_conf(const char* filename, ftp_conf_t* conf) {
 	fclose(fp);
 	return FTP_CONF_OK;
 }
-/*
-int get_file_size(int filefd) {
-	struct stat statbuf;
-	fstat(filefd, &statbuf);
-	return statbuf.st_size;
-}
-
-int sendfile_by_mmap(int sockfd, int filefd) {  
-	printf("%s\n", __func__);
-
-	int file_size = get_file_size(filefd);
-	char* file_mmap=(char*)mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, filefd, 0);
-	char* p = file_mmap;
-	int one_send_size = ONE_BODY_MAX;
-	int remain = file_size;
-	int ret;
-	response_pkg_head_t pkg_head;
-	while (remain > 0) {
-		bzero(&pkg_head, sizeof(pkg_head));
-		pkg_head.pkg_type = htons(file_content);
-		if (remain < one_send_size)
-			pkg_head.body_len = htons(remain);
-		else
-			pkg_head.body_len = htons(one_send_size);
-		
-		// 发送包头
-		sendn(sockfd, (char*)&pkg_head, sizeof(pkg_head));
-		// 发送包体
-		if (remain < one_send_size)
-			sendn(sockfd, file_mmap, remain);
-		else
-			sendn(sockfd, file_mmap, one_send_size);
-		
-		file_mmap += one_send_size;
-		remain -= one_send_size;
-	}
-
-	ret = munmap(p, file_size);
-	if (-1 == ret) {
-		perror("munmap");
-		return -1;
-	}
-
-	bzero(&pkg_head, sizeof(pkg_head));
-	pkg_head.pkg_type = htons(end_file);
-	// 发送文件结束标志
-	sendn(sockfd, (char*)&pkg_head, sizeof(pkg_head));
-}
-*/
-
 
 int ftp_daemon() {
 	pid_t pid = fork();

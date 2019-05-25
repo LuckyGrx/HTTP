@@ -1,11 +1,11 @@
 #include "util.h"
 #include "epoll.h"
-#include "http_request.h"
+#include "http_connection.h"
 #include "threadpool.h"
 #include "time_wheel.h"
 
 extern struct epoll_event *events;
-#define DEFAULT_CONFIG "http.conf"
+#define DEFAULT_CONFIG "server.conf"
 
 int main (int argc, char* argv[]) {
 	// 开启守护进程
@@ -21,9 +21,9 @@ int main (int argc, char* argv[]) {
 
 	int epollfd = ftp_epoll_create();
 
-	http_request_t* request = (http_request_t*)calloc(1, sizeof(http_request_t));
-	init_http_request_t(request, listenfd, epollfd);
-	ftp_epoll_add(epollfd, listenfd, request, EPOLLIN | EPOLLET);
+	http_connection_t* connection = (http_connection_t*)calloc(1, sizeof(http_connection_t));
+	init_http_connection_t(connection, listenfd, epollfd);
+	ftp_epoll_add(connection, EPOLLIN | EPOLLET);
 
 	// 初始化线程池
 	ftp_threadpool_t* pool = threadpool_init(conf.threadnum);
@@ -48,7 +48,7 @@ int main (int argc, char* argv[]) {
 	// 销毁时间轮
 	time_wheel_destroy();
 
-	free(request);
+	free(connection);
 	free(events);
 	close(epollfd);
 	close(listenfd);

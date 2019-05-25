@@ -2,8 +2,7 @@
 #define __HTTP_PARSE_H__
 
 #include "head.h"
-#include "http_request.h"
-#include "http_response.h"
+#include "http_connection.h"
 
 #define HTTP_EAGAIN EAGAIN
 #define ROOTPATH    "./root_path"
@@ -44,11 +43,10 @@ enum request_message_parse_state {
 	request_header_in_CRLFCR
 };
 
-
 //
-int http_parse_request_line(http_request_t* request);
+int http_parse_request_line(http_connection_t* connection);
 
-int http_parse_request_header(http_request_t* request);
+int http_parse_request_header(http_connection_t* connection);
 
 void http_parse_uri(char* uri_start, char* uri_end, char* filename, char* query_string);
 

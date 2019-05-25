@@ -1,16 +1,19 @@
 #include "http_parse.h"
 
 // 解析请求报文的请求行
-int http_parse_request_line(http_request_t* request) {
+int http_parse_request_line(http_connection_t* connection) {
+	http_request_t* request = &(connection->request);    // 获得请求数据结构
+	http_response_t* response = &(connection->response); // 获得响应数据结构
+
 	char ch, *p, *m;
 	size_t pi = request->begin;
 
-	if (request->state >= request_header_start) // 要是状态机处于大于等于初始请求头环节,直接返回
+	if (request->state >= request_header_start)
 		return 0;
 
 	for (; pi < request->end; ++pi) {
 		p = &(request->buffer[pi % BUFFER_SIZE]);
-		printf("%c", *p);
+		//printf("%c", *p);
 		ch = *p;
 
 		switch (request->state) {
@@ -24,7 +27,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->method_begin = p;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -48,7 +51,7 @@ int http_parse_request_line(http_request_t* request) {
 									break;
 								}
 							default:
-								request->status_code = response_not_implemented;
+								response->status_code = response_not_implemented;
 								return HTTP_PARSE_INVALID_REQUEST_LINE;
 						}
 						request->state = request_line_in_space_before_uri;
@@ -65,7 +68,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->uri_begin = p;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -83,7 +86,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_H;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -93,7 +96,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HT;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -103,7 +106,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HTT;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -113,7 +116,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_HTTP;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -123,7 +126,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_slot;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -134,7 +137,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->version = ch - '0';
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -144,7 +147,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_version_dot;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -157,7 +160,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->version = request->version * 10 + ch - '0';
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -167,7 +170,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->state = request_line_in_CR;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -177,7 +180,7 @@ int http_parse_request_line(http_request_t* request) {
 						request->request_end = p;
 						goto done;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_LINE;
 				}
 				break;
@@ -193,7 +196,10 @@ done:
 }
 
 // 解析请求报文的请求头
-int http_parse_request_header(http_request_t* request) {
+int http_parse_request_header(http_connection_t* connection) {
+	http_request_t* request = &(connection->request);    // 获得请求数据结构
+	http_response_t* response = &(connection->response); // 获得响应数据结构
+
 	char ch, *p, *m;
 	size_t pi = request->begin;
 	for (; pi < request->end; ++pi) {
@@ -224,7 +230,7 @@ int http_parse_request_header(http_request_t* request) {
 						request->state = request_header_in_space_before_value;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_HEADER;
 				}
 				break;
@@ -244,7 +250,7 @@ int http_parse_request_header(http_request_t* request) {
 						request->state = request_header_in_CRLF;
 						break;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_HEADER;
 				}
 				break;
@@ -261,10 +267,9 @@ int http_parse_request_header(http_request_t* request) {
 			case request_header_in_CRLFCR:
 				switch (ch) {
 					case LF:
-						request->state = request_line_start;
 						goto done;
 					default:
-						request->status_code = response_bad_request;
+						response->status_code = response_bad_request;
 						return HTTP_PARSE_INVALID_REQUEST_HEADER;
 				}
 				break;
@@ -275,6 +280,7 @@ int http_parse_request_header(http_request_t* request) {
 
 done:
 	request->begin = pi + 1;
+	request->state = request_line_start;
 	return 0;
 }
 
