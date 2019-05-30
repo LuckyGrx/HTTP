@@ -50,4 +50,6 @@ int http_parse_request_header(http_connection_t* connection);
 
 void http_parse_uri(char* uri_start, char* uri_end, char* filename, char* query_string);
 
+void get_cache_info(http_request_t** p_request);
+
 #endif

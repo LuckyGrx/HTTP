@@ -13,7 +13,6 @@ int http_parse_request_line(http_connection_t* connection) {
 
 	for (; pi < request->end; ++pi) {
 		p = &(request->buffer[pi % BUFFER_SIZE]);
-		//printf("%c", *p);
 		ch = *p;
 
 		switch (request->state) {
@@ -213,6 +212,7 @@ int http_parse_request_header(http_connection_t* connection) {
 						request->state = request_header_in_CRLFCR;
 						break;
 					default:
+						request->key_begin = p;
 						request->state = request_header_in_key;
 						break;
 				}
@@ -220,6 +220,7 @@ int http_parse_request_header(http_connection_t* connection) {
 			case request_header_in_key:
 				switch (ch) {
 					case ':':
+						request->key_end = p;
 						request->state = request_header_in_colon;
 						break;
 				}
@@ -235,11 +236,13 @@ int http_parse_request_header(http_connection_t* connection) {
 				}
 				break;
 			case request_header_in_space_before_value:
+				request->value_begin = p;
 				request->state = request_header_in_value;
 				break;
 			case request_header_in_value:
 				switch (ch) {
 					case CR:
+						request->value_end = p;
 						request->state = request_header_in_CR;
 						break;
 				}
@@ -247,6 +250,7 @@ int http_parse_request_header(http_connection_t* connection) {
 			case request_header_in_CR:
 				switch (ch) {
 					case LF:
+						get_cache_info(&request);
 						request->state = request_header_in_CRLF;
 						break;
 					default:
@@ -260,6 +264,7 @@ int http_parse_request_header(http_connection_t* connection) {
 						request->state = request_header_in_CRLFCR;
 						break;
 					default:
+						request->key_begin = p;
 						request->state = request_header_in_key;
 						break;
 				}
@@ -313,4 +318,38 @@ void http_parse_uri(char *uri_begin, char *uri_end, char *filename, char *query_
 	printf("query_string = %s\n", query_string);
 
 	return ;
+}
+
+
+void get_cache_info(http_request_t** p_request) {
+	http_request_t* request = *p_request;
+
+	int key_len = request->key_end - request->key_begin;
+	printf("key_len = %d\n", key_len);
+
+	int value_len = request->value_end - request->value_begin;
+	printf("value_len = %d\n", value_len);
+
+	if (key_len == strlen("If-None-Match")) {
+		if (!strncasecmp(request->key_begin, "If-None-Match", strlen("If-None-Match"))) {
+			request->if_none_match_begin = (char*)(request->value_begin);
+			request->if_none_match_end = (char*)(request->value_end);
+
+
+			//for (char* pi = request->if_none_match_begin; pi != request->if_none_match_end; ++pi)
+			//	printf("%c", *pi);
+			//printf("\n");	
+		}
+	}
+
+	if (key_len == strlen("If-Modified-Since")) {
+		if (!strncasecmp(request->key_begin, "If-Modified-Since", strlen("If-Modified-Since"))) {
+			request->if_modified_since_begin = (char*)(request->value_begin);
+			request->if_modified_since_end = (char*)(request->value_end);
+
+			//for (char* pi = request->if_modified_since_begin; pi != request->if_modified_since_end; ++pi)
+			//	printf("%c", *pi);
+			//printf("\n");
+		}
+	}
 }

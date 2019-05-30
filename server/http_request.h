@@ -26,6 +26,17 @@ typedef struct http_request {
 
 	int               version;             // HTTP的版本
 
+	void*             key_begin;
+	void*             key_end;
+	void*             value_begin;
+	void*             value_end;
+
+
+	char*             if_none_match_begin;
+	char*             if_none_match_end;
+	char*             if_modified_since_begin;
+	char*             if_modified_since_end;
+
 }http_request_t;
 
 void init_http_request_t(http_request_t* request);

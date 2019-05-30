@@ -4,13 +4,14 @@
 #include "head.h"
 #include "util.h"
 #include "rio.h"
-
+	
 #define CONNECTION_KEEP_ALIVE 1
 #define CONNECTION_CLOSE      2
 
 typedef struct http_response {
 	int connection;
 	int status_code;
+	time_t last_modify_time;
 }http_response_t;
 
 // 用key-value 表示mime_type_t
@@ -20,6 +21,8 @@ typedef struct mime_type {
 }mime_type_t;
 
 enum response_status {
+	response_ok                    = 200,
+
 	response_bad_request           = 400,
 	response_forbidden             = 403,
 	response_not_found             = 404,
@@ -36,7 +39,7 @@ const char* get_reason_phrase(int status_code);
 
 void send_response_message(http_response_t* response, int connfd);
 
-void static_file_process(http_response_t* response, int connfd, const char* filename, size_t filesize);
+void static_file_process(http_response_t* response, int method, int connfd, const char* filename, size_t filesize);
 
 int file_process(http_response_t* response, const char* filename, struct stat* sbuf);
 

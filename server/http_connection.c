@@ -10,6 +10,8 @@ void init_http_connection_t(http_connection_t* connection, int fd, int epollfd) 
 	connection->timer = NULL;
 }
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 void connection_controller(void* ptr) {
 	http_connection_t* connection = (http_connection_t*)ptr;
 	http_request_t* request = &(connection->request);
@@ -30,7 +32,7 @@ void connection_controller(void* ptr) {
 		plast = &(request->buffer[request->begin % BUFFER_SIZE]);
 
 		// remain_size 表示缓冲区当前剩余可写入的字节数
-		remain_size = BUFFER_SIZE - (request->end - request->begin);
+		remain_size = MIN(BUFFER_SIZE - (request->end - request->begin) - 1, BUFFER_SIZE - request->end % BUFFER_SIZE);
 
 		// 从已连接描述符fd读取数据
 		int reco = recv(connection->fd, plast, remain_size, 0);
@@ -77,13 +79,21 @@ void connection_controller(void* ptr) {
 			goto close;
 		}
 
+		// 得到文件的最后修改时间
+		response->last_modify_time = sbuf.st_mtime;
+
 		// 处理静态文件请求
-		static_file_process(response, connection->fd, filename, sbuf.st_size);
+		static_file_process(response, request->method, connection->fd, filename, sbuf.st_size);
+
+		printf("response->connection = %d\n", response->connection);
 
 		// 要是响应报文要求短连接,则发送完报文后,关闭连接
-		if (response->connection == CONNECTION_CLOSE)
+		if (response->connection == CONNECTION_CLOSE) {
+			//printf("2333\n");
 			goto close;
+		}
 	}
+
 	// 添加定时器
 	time_wheel_add_timer(connection, http_connection_close, tw.slot_interval * 10);
 
