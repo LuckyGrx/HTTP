@@ -14,6 +14,7 @@ typedef struct ftp_threadpool {
 	pthread_cond_t cond;
 	pthread_mutex_t mutex;
 	task_t* head;           // 任务链表头节点
+	task_t* tail;           // 任务链表尾指针
 	int threadnum;
 	int queuesize;          // 任务链表长度(不含头节点)
 

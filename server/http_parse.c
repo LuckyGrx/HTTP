@@ -350,6 +350,10 @@ void get_cache_info(http_request_t** p_request) {
 			//for (char* pi = request->if_modified_since_begin; pi != request->if_modified_since_end; ++pi)
 			//	printf("%c", *pi);
 			//printf("\n");
+
+
+			
+
 		}
 	}
 }

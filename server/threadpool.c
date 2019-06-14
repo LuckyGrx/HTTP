@@ -60,6 +60,8 @@ ftp_threadpool_t* threadpool_init(int threadnum){
 		goto err;
 	if (pthread_mutex_init(&(pool->mutex), NULL) != 0)
 		goto err;
+
+	pool->tail = pool->head;
 	pool->threadnum = 0;
 	pool->queuesize = 0;
 	pool->shutdown = 0;
@@ -92,9 +94,9 @@ int threadpool_add(ftp_threadpool_t* pool, void (*func)(void*), void *arg) {
 		goto err;
 	task->func = func;
 	task->arg = arg;
-	
-	task->next = pool->head->next;
-	pool->head->next = task;
+
+	pool->tail->next = task;  //采用尾插法,降低最长的响应时间值
+	pool->tail = task;
 
 	++(pool->queuesize);
 	pthread_cond_signal(&(pool->cond));
