@@ -10,6 +10,7 @@ void* threadpool_worker(void* p) {
 		pthread_mutex_lock(&(pool->mutex));
 
 		//printf("pid = %u\n", pthread_self());
+		//printf("pool->queuesize = %d\n", pool->queuesize);
 
 		while (0 == pool->queuesize && !(pool->shutdown)) {
 			// 先解锁,然后进入阻塞状态,信号来了之后,加上锁,最后返回
@@ -33,6 +34,8 @@ void* threadpool_worker(void* p) {
 		if (NULL == task) {
 			pthread_mutex_unlock(&(pool->mutex));
 			continue;
+		} else if (NULL == task->next) {
+			pool->tail = pool->head;
 		}
 
 		// 存在task则取走并开锁
@@ -94,9 +97,11 @@ int threadpool_add(ftp_threadpool_t* pool, void (*func)(void*), void *arg) {
 		goto err;
 	task->func = func;
 	task->arg = arg;
+	task->next = NULL;  //忘记添加next为空,导致工作线程一直在运行
 
 	pool->tail->next = task;  //采用尾插法,降低最长的响应时间值
 	pool->tail = task;
+	
 
 	++(pool->queuesize);
 	pthread_cond_signal(&(pool->cond));
